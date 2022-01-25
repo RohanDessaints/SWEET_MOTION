@@ -11,8 +11,50 @@ import matplotlib.pyplot as plt
 import geopandas as gpd
 import warnings
 warnings.filterwarnings('ignore')
+from bs4 import BeautifulSoup
 
 def app():
+    url = 'https://www.airparif.asso.fr/'
+    navigator = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1)'
+    response = requests.get(url, headers={'User-Agent': navigator, "Accept-Language": "fr-FR,fr;q=0.9"})
+    soup = BeautifulSoup(response.text, 'html.parser')
+    today = []
+    tomorrow = []
+    for z in soup.find_all("div", class_="bg-light equal-heights shadow-lg-dark"):
+        today.append(z.find('div', class_='row dataviz today open').find('div',
+                                                                         class_='global-indice-label position-relative').find(
+            'h3').string)
+    for y in soup.find_all("div", class_="bg-light equal-heights shadow-lg-dark"):
+        tomorrow.append(y.find('div', class_="row dataviz tomorrow").find('div',
+                                                                          class_="global-indice-label position-relative").find(
+            "h3").string)
+    tomorrow  # (la mise à jour de la prévision pour demain se fait à 11h30)
+    # on zip les deux listes en un dict
+    liste_zip = zip(today, tomorrow)
+    liste_dict = dict(liste_zip)
+    liste_dict
+    # on crée le Dataframe
+    df_critair = pd.DataFrame.from_dict(liste_dict, orient='index')
+    df_critair.reset_index(inplace=True)
+    df_critair.rename(columns={'index': "Qualité_Air_Aujourd'hui", 0: 'Qualité_Air_Demain'}, inplace=True)
+    df_critair["Qualité_Air_Aujourd'hui"] = df_critair["Qualité_Air_Aujourd'hui"].apply(lambda x: 'Bonne' if x == 'low'
+    else 'Moyenne' if x == 'average'
+    else 'Dégradée' if x == 'degrade'
+    else 'Mauvaise' if x == 'high'
+    else 'Très mauvaise' if x == 'very-high'
+    else 'Inconnue' if x == '-'
+    else 'Extrêmement mauvaise')
+    df_critair["Qualité_Air_Demain"] = df_critair["Qualité_Air_Demain"].apply(lambda x: 'Bonne' if x == 'low'
+    else 'Moyenne' if x == 'average'
+    else 'Dégradée' if x == 'degrade'
+    else 'Mauvaise' if x == 'high'
+    else 'Très mauvaise' if x == 'very-high'
+    else 'Inconnue' if x == '-'
+    else 'Extrêmement mauvaise')
+    df_critair
+
+
+
     def clean_data_belib():
         # création du DF dispo en temps réel
         link = "https://parisdata.opendatasoft.com/api/records/1.0/search/?dataset=belib-points-de-recharge-pour-vehicules-electriques-disponibilite-temps-reel&q=&rows=10000&facet=statut_pdc&facet=last_updated&facet=arrondissement"
