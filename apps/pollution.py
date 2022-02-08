@@ -12,8 +12,17 @@ import geopandas as gpd
 import warnings
 warnings.filterwarnings('ignore')
 from bs4 import BeautifulSoup
+import plotly.express as px
+import plotly.graph_objects as go
+from PIL import Image
 
 def app():
+    st.header("Ici tu peux voir comment arrêter de polluer l'atmosphère,"
+              " grâce à une invention incroyable qui s'appelle le vélo....")
+    st.title("")
+    st.subheader("Aussi, si tu vas pouvoir respirer aujourd'hui...")
+    st.title("")
+    st.title("")
     url = 'https://www.airparif.asso.fr/'
     navigator = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1)'
     response = requests.get(url, headers={'User-Agent': navigator, "Accept-Language": "fr-FR,fr;q=0.9"})
@@ -34,69 +43,105 @@ def app():
     liste_dict = dict(liste_zip)
     liste_dict
     # on crée le Dataframe
+
+    st.subheader("Indice de pollution de l'air")
+    st.title("")
+    col1,col2 = st.columns(2)
     df_critair = pd.DataFrame.from_dict(liste_dict, orient='index')
     df_critair.reset_index(inplace=True)
     df_critair.rename(columns={'index': "Qualité_Air_Aujourd'hui", 0: 'Qualité_Air_Demain'}, inplace=True)
-    df_critair["Qualité_Air_Aujourd'hui"] = df_critair["Qualité_Air_Aujourd'hui"].apply(lambda x: 'Bonne' if x == 'low'
-    else 'Moyenne' if x ==                      'average'
-    else 'Dégradée' if x == 'degrade'
-    else 'Mauvaise' if x == 'high'
-    else 'Très mauvaise' if x == 'very-high'
-    else 'Inconnue' if x == '-'
-    else 'Extrêmement mauvaise')
-    df_critair["Qualité_Air_Demain"] = df_critair["Qualité_Air_Demain"].apply(lambda x: 'Bonne' if x == 'low'
-    else 'Moyenne' if x == 'average'
-    else 'Dégradée' if x == 'degrade'
-    else st.metric(label="demain",value='mauvaise') if x == 'high'
-    else 'Très mauvaise' if x == 'very-high'
-    else 'Inconnue' if x == '-'
-    else 'Extrêmement mauvaise')
-
+    df_critair["Qualité_Air_Aujourd'hui"] = df_critair["Qualité_Air_Aujourd'hui"].apply(lambda x: col1.metric(label="Aujourd'hui",value='bonne') and col1.image(Image.open('bonne.png'),width = 150)if x == 'low'
+    else col1.metric(label="Aujourd'hui",value='moyenne') and col1.image(Image.open('moyen.png'),width = 150) if x == 'average'
+    else col1.metric(label="Aujourd'hui",value='dégradé')and col1.image(Image.open('degrade.png'),width = 150) if x == 'degrade'
+    else col1.metric(label="Aujourd'hui",value='mauvaise')and col1.image(Image.open('mauvais.png'),width = 150) if x == 'high'
+    else col1.metric(label="Aujourd'hui",value='très mauvaise')and col1.image(Image.open('tres_mauvais.png'),width = 150) if x == 'very-high'
+    else col1.metric(label="Aujourd'hui",value='inconnue')and col1.image(Image.open('know.png'),width = 150) if x == '-'
+    else col1.metric(label="Aujourd'hui",value=' extrêmement mauvaise')and col1.image(Image.open('extrem.png'),width = 150))
+    df_critair["Qualité_Air_Demain"] = df_critair["Qualité_Air_Demain"].apply(lambda x: col2.metric(label="demain",value='bonne') and col2.image(Image.open('bonne.png'),width = 150) if x == 'low'
+    else col2.metric(label="demain",value='moyenne') and col2.image(Image.open('moyen.png'),width= 150) if x == 'average'
+    else col2.metric(label="demain",value='dégradé')and col2.image(Image.open('degrade.png'),width = 150) if x == 'degrade'
+    else col2.metric(label="demain",value='mauvaise')and col2.image(Image.open('mauvais.png'),width = 150) if x == 'high'
+    else col2.metric(label="demain",value='très mauvaise')and col2.image(Image.open('tres_mauvais.png'),width = 150) if x == 'very-high'
+    else col2.metric(label="demain",value='inconnue')and col2.image(Image.open('know.png'),width = 80) if x == '-'
+    else col2.metric(label="demain",value=' extrêmement mauvaise')and col2.image(Image.open('extrem.png'),width = 150))
+    #image = Image.open('6.png')
+    #col2.image(Image.open('moyen.png')) if x == 'average'
     #st.metric(label="demain",value='mauvaise')
     #st.write(df_critair)
+    st.title("")
+    st.title("")
 
-    def clean_data_belib():
-        # création du DF dispo en temps réel
-        link = "https://parisdata.opendatasoft.com/api/records/1.0/search/?dataset=belib-points-de-recharge-pour-vehicules-electriques-disponibilite-temps-reel&q=&rows=10000&facet=statut_pdc&facet=last_updated&facet=arrondissement"
-        r = requests.get(link)
-        data = r.json()
-        dispo = pd.json_normalize(data["records"])
-        return dispo
+    velib_mois = pd.read_csv('velib_mois.csv', sep=',')
+    st.subheader('Utilisation des vélibs depuis 2019')
+    annees = st.selectbox("Choix de l’année", ('Toutes les années', '2019', '2020', '2021'))
 
-    df3 = clean_data_belib()
+    if annees == '2019':
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=velib_mois['Date de comptage'], y=velib_mois['Comptage horaire 2019'], name='2019'))
 
-    def adresse(adresse_postale):
-        adresse_postale = adresse_postale.replace(" ", "+")
-        link = f"https://api-adresse.data.gouv.fr/search/?q={adresse_postale}"
-        r = requests.get(link)
-        coords = r.json()["features"][0]["geometry"]["coordinates"]
-        my_tuple = coords[1], coords[0]
-        return (list(my_tuple))
+        fig.update_layout(
+            xaxis_title="Par mois",
+            yaxis_title="Comptage horaire moyen",
+            legend_title="Année",
+            font=dict(
+                size=18))
+        st.plotly_chart(fig, clear_figure=True)
 
-    df3 = df3[df3["fields.statut_pdc"] == "Disponible"].groupby(by="fields.code_insee_commune").count()
-    df3.reset_index(inplace=True)
-    df3.drop(columns=["fields.id_pdc"], inplace=True)
-    df3.rename(columns={"fields.code_insee_commune": "c_arinsee", "fields.statut_pdc": "bornes recharge disponibles"},
-               inplace=True)
-    df3["c_arinsee"] = df3["c_arinsee"].astype(int)
-    dfgeoA = gpd.read_file("arrondissements.geojson")
-    dfgeoA = pd.merge(dfgeoA, df3, on="c_arinsee")
-    dfgeoA.rename(columns={"l_ar": "Arrondissement"}, inplace=True)
-    lieu = adresse("10 rue du Louvre 75001".capitalize())
-    carte_lieu = folium.Map(location=lieu, zoom_start=12)
-    cp = folium.Choropleth(
-        geo_data=dfgeoA,
-        name="geometry",
-        data=dfgeoA,
-        columns=["c_arinsee", "bornes recharge disponibles"],
-        key_on='feature.properties.c_arinsee',
-        fill_color='YlGn',
-        fill_opacity=0.6,
-        line_opacity=0.6,
-        legend_name=("Nombre de bornes recharges dispos par arrondissements"),
-        highlight=True,
-        bins=4).add_to(carte_lieu)
-    folium.raster_layers.TileLayer(tiles="Stamen Terrain", overlay=True).add_to(carte_lieu)
-    folium.LayerControl('topright', collapsed=True).add_to(carte_lieu)
-    folium.GeoJsonTooltip(['Arrondissement', 'bornes recharge disponibles']).add_to(cp.geojson)
-    folium_static(carte_lieu)
+    if annees == '2020':
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=velib_mois['Date de comptage'], y=velib_mois['Comptage horaire 2020'], name='2020'))
+
+        fig.update_layout(
+            xaxis_title="Par mois",
+            yaxis_title="Comptage horaire moyen",
+            legend_title="Année",
+            font=dict(
+                size=18))
+        st.plotly_chart(fig, clear_figure=True)
+
+    if annees == '2021':
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=velib_mois['Date de comptage'], y=velib_mois['Comptage horaire 2021'], name='2021'))
+
+        fig.update_layout(
+            xaxis_title="Par mois",
+            yaxis_title="Comptage horaire moyen",
+            legend_title="Année",
+            font=dict(
+                size=18))
+        st.plotly_chart(fig, clear_figure=True)
+
+    else:
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=velib_mois['Date de comptage'], y=velib_mois['Comptage horaire 2019'], name='2019'))
+        fig.add_trace(go.Scatter(x=velib_mois['Date de comptage'], y=velib_mois['Comptage horaire 2020'], name='2020'))
+        fig.add_trace(go.Scatter(x=velib_mois['Date de comptage'], y=velib_mois['Comptage horaire 2021'], name='2021'))
+
+        fig.update_layout(
+            xaxis_title="Par mois",
+            yaxis_title="Comptage horaire moyen",
+            legend_title="Année",
+            font=dict(
+                size=18))
+        st.plotly_chart(fig, clear_figure=True)
+
+    st.title("")
+    st.title("")
+    st.subheader("Plus il y a de vélib, moins il y a de pollution...?")
+    vpp = pd.read_csv('velib_pollu_T.csv', sep=',')
+    fig1 = px.scatter(data_frame=vpp, x="Date", y="Vélib", size='Pollution', color='année',
+                      color_discrete_map={'2019': 'darkgreen', '2020': 'mediumseagreen', '2021': 'lightgreen'})
+    fig2 = px.line(data_frame=vpp[vpp['année'] == '2019'], x="Date", y="Vélib")
+    fig2.update_traces(line_color='darkgreen')
+    fig3 = px.line(data_frame=vpp[vpp['année'] == '2020'], x="Date", y="Vélib")
+    fig3.update_traces(line_color='mediumseagreen')
+    fig4 = px.line(data_frame=vpp[vpp['année'] == '2021'], x="Date", y="Vélib")
+    fig4.update_traces(line_color='lightgreen')
+    fig5 = go.Figure(data=fig1.data + fig2.data + fig3.data + fig4.data)
+    fig5.update_layout(title_text="Moyenne d'utilisation des vélibs selon la pollution", title_x=0.5)
+    fig5.update_xaxes(title_text='Mois')
+    fig5.update_yaxes(title_text='Pollution(moyenne des No2, No, Nox, en microg/m3)')
+    fig5.update_layout(legend_title="Années")
+
+    st.plotly_chart(fig5, use_container_width=False, sharing="streamlit")
+

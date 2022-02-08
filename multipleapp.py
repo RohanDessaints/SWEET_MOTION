@@ -1,5 +1,5 @@
 import streamlit as st
-
+from PIL import Image
 
 # Define the multipage class to manage the multiple apps in our program
 class MultiPage:
@@ -25,6 +25,8 @@ class MultiPage:
 
     def run(self):
         # Dropdown to select the page to run
+        image = Image.open('6.png')
+        st.sidebar.image(image)
         page = st.sidebar.selectbox(
         #page = st.selectbox(
             'Navigation',
