@@ -17,11 +17,10 @@ import plotly.graph_objects as go
 from PIL import Image
 
 def app():
-    st.header("Ici tu peux voir comment arrêter de polluer l'atmosphère,"
+    st.title("Ici tu peux voir comment arrêter de polluer l'atmosphère,"
               " grâce à une invention incroyable qui s'appelle le vélo....")
-    st.title("")
-    st.subheader("Aussi, si tu vas pouvoir respirer aujourd'hui...")
-    st.title("")
+    st.subheader("")
+    st.header("Et, si tu vas pouvoir respirer aujourd'hui...")
     st.title("")
     url = 'https://www.airparif.asso.fr/'
     navigator = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1)'
@@ -72,76 +71,275 @@ def app():
     st.title("")
 
     velib_mois = pd.read_csv('velib_mois.csv', sep=',')
-    st.subheader('Utilisation des vélibs depuis 2019')
-    annees = st.selectbox("Choix de l’année", ('Toutes les années', '2019', '2020', '2021'))
+
+    vp19 = pd.read_csv('vp19.csv', sep=',')
+    vp20 = pd.read_csv('vp20.csv', sep=',')
+    vp21 = pd.read_csv('vp21.csv', sep=',')
+    st.header("+ de Vélib' : - de pollution ?")
+
+    st.header("La pollution et l'utilisation des Vélib' à Paris depuis 2019")
+    st.subheader('Et ça pédale fort depuis trois ans !')
+
+    st.write(
+        "Si la crise sanitaire a bousculé nos sociétés, elle a été une véritable bouffée "
+        "d'air pour notre planète ! L'année 2020 a enregsitré une baisse de la pollution significative. "
+        "Et si, nous parisiens, nous profitions de cette période pour passer au monde d'après ? Grâce aux données "
+        "d'AirParif et de la mairie de Paris, nous pouvons mettre en lien l'utilisation des Vélib' et le taux de "
+        "pollution dans le capitale, sur ces 3 dernières années.")
+
+    annees2 = st.selectbox("Pour filtrer le graphique sur les années :", ('Toutes les années', '2019', '2020', '2021'),
+                           key=1)
+
+    if annees2 == '2019':
+        figp19 = go.Figure(data=[go.Scatter(
+            x=vp19['Date'], y=vp19['Vélib'],
+            mode='markers+lines',
+            name='2019',
+            marker=dict(
+                size=vp19['Pollution'], color='rgb(0,134,149)'))])
+        figp19.update_layout(
+            autosize=False,
+            width=1200,
+            height=500,
+            xaxis_title="Par mois",
+            yaxis_title="Comptage horaire moyen",
+            title="Année 2019 : le monde d'avant ",
+            font=dict(
+                size=14))
+        st.plotly_chart(figp19, clear_figure=True)
+
+    if annees2 == "2020":
+        figp20 = go.Figure(data=[go.Scatter(
+            x=vp20['Date'], y=vp20['Vélib'],
+            mode='markers+lines',
+            name='2020',
+            marker=dict(
+                size=vp20['Pollution'], color='rgb(35,181,128)'))])
+        figp20.update_layout(
+            autosize=False,
+            width=1200,
+            height=500,
+            xaxis_title="Par mois",
+            yaxis_title="Comptage horaire moyen",
+            title="Année 2020 : le confinement ",
+            font=dict(
+                size=14))
+
+        st.plotly_chart(figp20, clear_figure=True)
+
+    if annees2 == "2021":
+        figp21 = go.Figure(data=[go.Scatter(
+            x=vp21['Date'], y=vp21['Vélib'],
+            mode='markers+lines',
+            name='2021',
+            marker=dict(
+                size=vp21['Pollution'], color='rgb(102,194,175)'))])
+        figp21.update_layout(
+            autosize=False,
+            width=1200,
+            height=500,
+            xaxis_title="Par mois",
+            yaxis_title="Comptage horaire moyen",
+            title="Année 2021 : le monde d'après ? ",
+            font=dict(
+                size=14))
+
+        st.plotly_chart(figp21, clear_figure=True)
+
+    if annees2 == 'Toutes les années':
+        figpall = go.Figure(data=[go.Scatter(
+            x=vp19['Date'], y=vp19['Vélib'],
+            mode='markers+lines',
+            name="2019 : le monde d'avant",
+            marker=dict(
+                size=vp19['Pollution'] * 0.85, color='rgb(0,134,149)')
+
+        )])
+        figpall.add_trace(go.Scatter(
+            x=vp20['Date'], y=vp20['Vélib'],
+            mode='markers+lines',
+            name="2020 : le confinement",
+            marker=dict(
+                size=vp20['Pollution'] * 0.85, color='rgb(35,181,128)')
+        ))
+
+        figpall.add_trace(go.Scatter(
+            x=vp21['Date'], y=vp21['Vélib'],
+            mode='markers+lines',
+            name="2021 : le monde d'après",
+            marker=dict(
+                size=vp21['Pollution'] * 0.85, color='rgb(102,194,175)')
+        ))
+
+        figpall.update_layout(
+            autosize=False,
+            width=1200,
+            height=500,
+            xaxis_title="Par mois",
+            yaxis_title="Comptage horaire moyen",
+            title="Depuis 2019 ",
+            legend_title="Pollution par année",
+            font=dict(
+                size=14))
+        st.plotly_chart(figpall, clear_figure=True)
+
+    st.caption("Pollution = émission moyenne de Monoxyde de carbone (No) et Dioxyde de carbone (No2).")
+    st.caption(
+        "Comptage horaire moyen = utilisation en moyenne, par heure, des vélos, sur l'ensemble des bornes parisiennes.")
+
+    st.write(
+        "La taille des cercles est ici proportionnelle aux émissions de pollution et les courbes correspondent à l'utilisation horaire moyen de Vélib'.")
+    st.header(
+        "Les chiffres sont clairs : 2021 enregistre une nette baisse de la pollution et une augmentation de l'utilisation des Vélib' !")
+
+    # PARTIE 2
+
+    st.write(
+        " Les deux graphiques suivants permettent de distinguer et comparer plus en détails les émissions de pollution et l'utilisation des Vélib'.")
+
+    velib_mois = pd.read_csv('velib_mois.csv', sep=',')
+    annees = st.selectbox("Pour filtrer les deux graphiques sur les années:",
+                          ('Toutes les années', '2019', '2020', '2021'), key=2)
 
     if annees == '2019':
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(x=velib_mois['Date de comptage'], y=velib_mois['Comptage horaire 2019'], name='2019'))
+        figp19 = go.Figure(data=[go.Scatter(
+            x=vp19['Date'], y=vp19['Pollution'],
+            line=dict(color="rgb(0,134,149)"),
+            mode='markers+lines')])
+        figp19.update_layout(
+            title='Pollution en 2019',
+            autosize=False,
+            width=1200,
+            height=500,
+            xaxis_title="Par mois",
+            yaxis_title="Pollution moyenne",
+            font=dict(
+                size=14))
+        st.plotly_chart(figp19, clear_figure=True)
 
-        fig.update_layout(
+        figv19 = go.Figure()
+        figv19.add_trace(
+            go.Scatter(x=velib_mois['Date de comptage'], y=velib_mois['Comptage horaire 2019'], name='2019',
+                       line=dict(color="rgb(0,134,149)")))
+
+        figv19.update_layout(
+            title='Utilisation des vélib en 2019',
+            autosize=False,
+            width=1200,
+            height=500,
             xaxis_title="Par mois",
             yaxis_title="Comptage horaire moyen",
             legend_title="Année",
             font=dict(
-                size=18))
-        st.plotly_chart(fig, clear_figure=True)
+                size=14))
+        st.plotly_chart(figv19, clear_figure=True)
 
     if annees == '2020':
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(x=velib_mois['Date de comptage'], y=velib_mois['Comptage horaire 2020'], name='2020'))
+        figp20 = go.Figure(data=[go.Scatter(
+            x=vp20['Date'], y=vp20['Pollution'],
+            line=dict(color="rgb(35,181,128)"),
+            mode='markers+lines')])
+        figp20.update_layout(
+            title='Pollution en 2020',
+            autosize=False,
+            width=1200,
+            height=500,
+            xaxis_title="Par mois",
+            yaxis_title="Pollution moyenne",
+            font=dict(
+                size=14))
+        st.plotly_chart(figp20, clear_figure=True)
 
-        fig.update_layout(
+        figv20 = go.Figure()
+        figv20.add_trace(
+            go.Scatter(x=velib_mois['Date de comptage'], y=velib_mois['Comptage horaire 2020'], name='2020',
+                       line=dict(color="rgb(35,181,128)")))
+
+        figv20.update_layout(
+            title='Utilisation des vélib en 2020',
+            autosize=False,
+            width=1200,
+            height=500,
             xaxis_title="Par mois",
             yaxis_title="Comptage horaire moyen",
             legend_title="Année",
             font=dict(
-                size=18))
-        st.plotly_chart(fig, clear_figure=True)
+                size=14))
+        st.plotly_chart(figv20, clear_figure=True)
 
     if annees == '2021':
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(x=velib_mois['Date de comptage'], y=velib_mois['Comptage horaire 2021'], name='2021'))
+        figp21 = go.Figure(data=[go.Scatter(
+            x=vp21['Date'], y=vp21['Pollution'],
+            line=dict(color="rgb(102,194,175)"),
+            mode='markers+lines')])
+        figp21.update_layout(
+            title='Pollution en 2021',
+            autosize=False,
+            width=1200,
+            height=500,
+            xaxis_title="Par mois",
+            yaxis_title="Pollution moyenne",
+            font=dict(
+                size=14))
+        st.plotly_chart(figp21, clear_figure=True)
 
-        fig.update_layout(
+        figv21 = go.Figure()
+        figv21.add_trace(
+            go.Scatter(x=velib_mois['Date de comptage'], y=velib_mois['Comptage horaire 2021'], name='2021',
+                       line=dict(color="rgb(102,194,175)")))
+
+        figv21.update_layout(
+            title='Utilisation des vélib en 2020',
+            autosize=False,
+            width=1200,
+            height=500,
             xaxis_title="Par mois",
             yaxis_title="Comptage horaire moyen",
             legend_title="Année",
             font=dict(
-                size=18))
-        st.plotly_chart(fig, clear_figure=True)
+                size=14))
+        st.plotly_chart(figv21, clear_figure=True)
 
-    else:
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(x=velib_mois['Date de comptage'], y=velib_mois['Comptage horaire 2019'], name='2019'))
-        fig.add_trace(go.Scatter(x=velib_mois['Date de comptage'], y=velib_mois['Comptage horaire 2020'], name='2020'))
-        fig.add_trace(go.Scatter(x=velib_mois['Date de comptage'], y=velib_mois['Comptage horaire 2021'], name='2021'))
+    if annees == 'Toutes les années':
+        figpall = go.Figure(data=[go.Scatter(
+            x=vp19['Date'], y=vp19['Pollution'], name='2019',
+            mode='markers+lines', line=dict(color="rgb(0,134,149)"))])
+        figpall.add_trace(go.Scatter(
+            x=vp20['Date'], y=vp20['Pollution'], name='2020',
+            mode='markers+lines', line=dict(color="rgb(35,181,128)")))
+        figpall.add_trace(go.Scatter(
+            x=vp21['Date'], y=vp21['Vélib'], name='2021',
+            mode='markers+lines', line=dict(color="rgb(102,194,175)")))
 
-        fig.update_layout(
+        figpall.update_layout(
+            title='Pollution depuis 2019',
+            autosize=False,
+            width=1200,
+            height=500,
+            xaxis_title="Par mois",
+            yaxis_title="Pollution moyenne",
+            font=dict(
+                size=14))
+        st.plotly_chart(figpall, clear_figure=True)
+
+        figvall = go.Figure()
+
+        figvall.add_trace(go.Scatter(x=velib_mois['Date de comptage'], y=velib_mois['Comptage horaire 2019'],
+                                     line=dict(color="rgb(0,134,149)"), name='2019'))
+        figvall.add_trace(go.Scatter(x=velib_mois['Date de comptage'], y=velib_mois['Comptage horaire 2020'],
+                                     line=dict(color="rgb(35,181,128)"), name='2020'))
+        figvall.add_trace(go.Scatter(x=velib_mois['Date de comptage'], y=velib_mois['Comptage horaire 2021'],
+                                     line=dict(color="rgb(102,194,175)"), name='2021'))
+
+        figvall.update_layout(
+            autosize=False,
+            width=1200,
+            height=500,
+            title='Utilisation des vélib depuis 2019',
             xaxis_title="Par mois",
             yaxis_title="Comptage horaire moyen",
             legend_title="Année",
             font=dict(
-                size=18))
-        st.plotly_chart(fig, clear_figure=True)
-
-    st.title("")
-    st.title("")
-    st.subheader("Plus il y a de vélib, moins il y a de pollution...?")
-    vpp = pd.read_csv('velib_pollu_T.csv', sep=',')
-    fig1 = px.scatter(data_frame=vpp, x="Date", y="Vélib", size='Pollution', color='année',
-                      color_discrete_map={'2019': 'darkgreen', '2020': 'mediumseagreen', '2021': 'lightgreen'})
-    fig2 = px.line(data_frame=vpp[vpp['année'] == '2019'], x="Date", y="Vélib")
-    fig2.update_traces(line_color='darkgreen')
-    fig3 = px.line(data_frame=vpp[vpp['année'] == '2020'], x="Date", y="Vélib")
-    fig3.update_traces(line_color='mediumseagreen')
-    fig4 = px.line(data_frame=vpp[vpp['année'] == '2021'], x="Date", y="Vélib")
-    fig4.update_traces(line_color='lightgreen')
-    fig5 = go.Figure(data=fig1.data + fig2.data + fig3.data + fig4.data)
-    fig5.update_layout(title_text="Moyenne d'utilisation des vélibs selon la pollution", title_x=0.5)
-    fig5.update_xaxes(title_text='Mois')
-    fig5.update_yaxes(title_text='Pollution(moyenne des No2, No, Nox, en microg/m3)')
-    fig5.update_layout(legend_title="Années")
-
-    st.plotly_chart(fig5, use_container_width=False, sharing="streamlit")
+                size=14))
+        st.plotly_chart(figvall, clear_figure=True)
 

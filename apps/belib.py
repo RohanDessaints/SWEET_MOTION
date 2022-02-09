@@ -7,21 +7,17 @@ import folium
 import streamlit as st
 from streamlit_folium import folium_static
 import folium.plugins as plugins
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import warnings
 warnings.filterwarnings('ignore')
 from PIL import Image
-from geopy import distance
+from shapely.geometry import Point
+import geopandas as gpd
+#from geopy import distance
 # getting the belib data from API+CSV
 
 
 def app():
-    st.header("")
-    # créer différentes pages web
-    # page = st.sidebar.radio('Page affichée', ['Carte Bélib', 'Visualisations Bélib', 'Stacked plot'])
-    # if page == 'Carte Bélib':
-    # indenter code qui suit
-
     # getting the belib data from API+CSV
     def clean_data_belib():
         # création du DF dispo en temps réel
@@ -61,6 +57,22 @@ def app():
     # page setting "wide"
     #st.set_page_config(layout="wide")
 
+    st.title("Se brancher pour mieux avancer")
+    # chapitre historique bélib
+    st.header("Pour commençer un peu d'histoire...", anchor=None)
+    # texte introduction
+    st.markdown("Pour pouvoir atteindre certaines puissances électriques minimums, \
+    il est vite apparu qu’il faudrait aller au-delà de la simple prise ordinaire 10A (2,3 kW) ou même prise standard à 16 ampères (3,7 kW). \
+    Les constructeurs et les équipementiers ont donc commencé à travailler chacun dans leur coin sur des prises permettant des charges plus rapides.\
+    Au début de la nouvelle vague des véhicules électriques, les constructeurs ont tenté d’imposer différentes types de prise de recharge, chacun le sien ou presque.\
+     En matière de voitures électriques, plusieurs catégories de prises pour systèmes de recharge existent.\
+     Combo CCS, prise domestique, type 1, type 2, type 3, type 4 ou CHAdeMO, supercharger. \
+     En Asie, le Type 1, ou prise Yazaki, faisait florès mais il est techniquement limité à 8 kW. \
+     En Europe, deux types de prises se sont longtemps affrontés  : le type 3 et le type 2. \
+    Les bornes de recharge du réseau Belib' sont universelles et pourvues de plusieurs prises :\
+     type 2, type 3, domestique E/ F, câble Combo 2 ou câble CHAdeMo. Elles permettent donc de brancher tous les types de véhicules y compris les 2 roues. \
+     La puissance fournie peut aller jusqu'à 22 kW.")
+
     col1, col2 = st.columns([3, 1])
     # carte avec clusters Belib
     belib["latitude"] = belib["latitude"].apply(lambda x: float(x))
@@ -95,11 +107,11 @@ def app():
     cluster = folium.FeatureGroup(name='cluster')  # création du cluster
     cluster.add_child(plugins.MarkerCluster(locations=locations, icons=icons)).add_to(map_paris)
     with col1:
-        st.title("Réseau Bélib Paris", anchor=None)
+        st.header("Réseau Bélib Paris", anchor=None)
         st.subheader("carte des emplacements")
         folium_static(map_paris)  # affichage
     with col2:
-        st.title("En chiffres ", anchor=None)
+        st.header("En chiffres ", anchor=None)
         st.subheader("nombre d'emplacements")
         pie_data = pd.concat([belib, pd.get_dummies(belib["fields.statut_pdc"])], axis=1).reset_index()
         pie_data["code postal"] = pie_data["Adresse station"].apply(lambda x: re.findall("75\d+", x)[0])
@@ -108,57 +120,7 @@ def app():
         table = pie_data.groupby(by="code postal") \
             .agg(sum)[[status]]
         table
-
-    # Géolocalisation
-    def geoloc(adresse_postale):
-        adresse_postale = adresse_postale.replace(" ", "+")
-        link = f"https://api-adresse.data.gouv.fr/search/?q={adresse_postale}"
-        r = requests.get(link)
-        coords = r.json()["features"][0]["geometry"]["coordinates"]
-        my_tuple = coords[1], coords[0]
-        return (list(my_tuple))
-
-    st.title("Géolocalisation", anchor=None)
-    adresse = st.text_input('Adresse', '44 rue Alphonse Penaud 75020')
-    st.write('Votre adresse actuelle est', adresse)
-
-    col1, col2 = st.columns([3, 1])
-    # affichage de la position
-    lieu = geoloc(adresse)
-    carte_lieu = folium.Map(location=lieu, zoom_start=16)
-    folium.raster_layers.TileLayer(tiles="Stamen Terrain", overlay=True).add_to(carte_lieu)
-    # folium.map.LayerControl('topright', collapsed=False).add_to(carte_lieu) #bouton choix carte fond
-    marker2 = folium.Marker(location=lieu, tooltip='Vous êtes-ici',
-                            icon=folium.Icon(color="blue", icon="male", prefix='fa'))
-    marker2.add_to(carte_lieu)
-    # affichage des bornes dispo
-    belib_dispo = belib[belib["fields.statut_pdc"] == "Disponible"]
-    distances = []  # pr récup distances
-    for i, col in belib_dispo.iterrows():
-        distances.append(distance.distance((lieu[0], lieu[1]), (col["latitude"], col["longitude"])).m)
-        label = f'statut: {col["fields.statut_pdc"]}, nombre de prises: {col["Nombre point de recharge"]}, Stationnement 2 roues : {col["Stationnement 2 roues"]}, Accessibilité PMR : {col["Accessibilité PMR"]}, Paiement CB : {col["Paiement CB"]}'
-        location = [col["latitude"], col["longitude"]]
-        marker = folium.Marker(location=location, tooltip=col["Adresse station"], popup=label,
-                               icon=folium.Icon(color="green", icon="bolt", prefix='fa'))
-        marker.add_to(carte_lieu)
-    with col1:
-        folium_static(carte_lieu)  # affichage  carte
-    with col2:
-        st.subheader("stations proches")
-        belib_dispo["distances"] = distances
-        dispo_proche = belib_dispo[["Adresse station", "distances", "fields.statut_pdc"]] \
-            .groupby(by="Adresse station").agg({"distances": np.mean, "fields.statut_pdc": "count"}) \
-            .sort_values(by="distances", ascending=True) \
-            .reset_index() \
-            .rename(columns={"distances": "distance(m)", "fields.statut_pdc": "nombre dispo"})
-        dispo_proche["distance(m)"] = dispo_proche["distance(m)"].apply(lambda x: round(x))
-        for i in range(3):
-            st.write("Adresse :\n", pd.DataFrame(dispo_proche.loc[i]).T.set_index([pd.Index([i + 1])]).iloc[0, 0])
-            st.write("Distance (m):", pd.DataFrame(dispo_proche.loc[i]).T.set_index([pd.Index([i + 1])]).iloc[0, 1])
-            st.write("Places dispo :", pd.DataFrame(dispo_proche.loc[i]).T.set_index([pd.Index([i + 1])]).iloc[0, 2])
-
-    # bloc sur les connectiques et dispo
-    st.title("Statut des emplacements", anchor=None)
+    # table et chart statiques tout Paris
     # data
     pie_data = pd.concat([belib, pd.get_dummies(belib["fields.statut_pdc"])], axis=1).reset_index()
     pie_data["code postal"] = pie_data["Adresse station"].apply(lambda x: re.findall("75\d+", x)[0])
@@ -169,6 +131,30 @@ def app():
     for prise in prises:
         pie_data[prise] = pie_data[prise].apply(lambda x: 0 if x == "non" else 1)
 
+    st.header("Statut des prises dans Paris", anchor=None)
+    st.markdown("Total Énergies, qui a récupéré le marché de reconversion des bornes Belib’ et Autolib dans la capitale, \
+    a remis en service 2000 prises sur 2300. Pour 7 euros par an, visiteurs et Parisiens peuvent désormais charger leur voiture à des tarifs allant de 50 centimes à 90 centimes le quart d’heure. \
+    Et de nouvelles bornes sont en cours de déploiement. Afin d’encourager la mobilité électrique, Autolib’ Vélib’ Métropole a souhaité que \
+    les véhicules électriques des particuliers puissent se recharger sur les stations Autolib’. \
+    Plusieurs milliers de bornes de recharge sont ainsi disponibles à un coût modique pour les franciliens possédant une voiture ou un deux-roues \
+    électriques. Les données ci-dessous permettent de retrouver le statut de l'offre actuellement disponible par arrondissement sur Paris.")
+    st.markdown("")
+    col1, col2 = st.columns([2, 1])
+    table = pie_data.groupby(by="code postal") \
+        .agg(sum)[["Disponible", "En maintenance", "Inconnu", "Occupé (en charge)", "total"]]
+    col1.write(table)
+
+    status_colors = ['darkgreen', 'orange', 'yellow', 'orangered']
+
+    pie_chart = table.T.drop(["total"]).T.sum().plot(kind="pie", ylabel="", colors=status_colors);
+    col2.write(pie_chart.figure)
+
+    st.header("Statut des emplacements", anchor=None)
+    st.markdown("En sélectionnant l'arrondissement de votre choix dans le menu déroulant ci-dessous, \
+    vous pourrez en consulter les disponibilités de connectiques en temps réel. \
+    Les bornes de charge des emplacements Bélib sont universelles, plusieurs types de prises sont disponibles par emplacement.")
+
+    # création des colonnes
     arrondissement = st.selectbox("Arrondissement", sorted(list(pie_data["code postal"].unique())), key=1)
     widget_data = pie_data.groupby(by="code postal") \
         .agg(sum)[["Prise type EF", "Prise type 2", "Prise type 3", "Prise type Combo CCS", "Prise type Chademo",
@@ -176,7 +162,6 @@ def app():
         .loc[arrondissement].T.reset_index().rename(columns={"index": "type prise", arrondissement: "nombre de prises"})
 
     st.subheader("Connectiques disponibles sur les emplacements")
-    # création des colonnes rang1
     col1, col2, col3, col4, col5, col6 = st.columns(6)
     image1 = Image.open('prise_EF.JPG')
     image2 = Image.open('prise_type2.JPG')
@@ -187,7 +172,7 @@ def app():
     col4.metric(widget_data.iloc[1, 0], widget_data.iloc[1, 1])
     col5.image(image3, width=95)
     col6.metric(widget_data.iloc[2, 0], widget_data.iloc[2, 1])
-    # création des colonnes rang2
+
     col1, col2, col3, col4, col5, col6 = st.columns(6)
     image4 = Image.open('prise_combo.JPG')
     image5 = Image.open('prise_chademo.JPG')
@@ -197,7 +182,7 @@ def app():
     col4.metric(widget_data.iloc[4, 0], widget_data.iloc[4, 1])
     col5.text(" ")
     col6.text(" ")
-    # création des colonnes rang3 (table + table + taux dispo)
+
     col1, col2, col3 = st.columns(3)
     col1.write(widget_data.iloc[0:5, :].set_index("type prise"))
     col2.write(widget_data.iloc[6:, :].rename(
@@ -207,19 +192,12 @@ def app():
         dispo_percent = str(round((widget_data.iloc[6, 1] / widget_data.iloc[10, 1]) * 100)) + "%"
         st.subheader(dispo_percent)
 
-    # table et chart statiques tout Paris
-    st.title("Statut des prises dans Paris", anchor=None)
-    col1, col2 = st.columns([2, 1])
-    table = pie_data.groupby(by="code postal") \
-        .agg(sum)[["Disponible", "En maintenance", "Inconnu", "Occupé (en charge)", "total"]]
-    col1.write(table)
-    pie_chart = table.T.drop(["total"]).T.sum().plot(kind="pie", ylabel="");
-    col2.write(pie_chart.figure)
-
-    # Types de connectiques par arrondissement (stacked chart filtré)
-    st.title("Connectiques par arrondissement", anchor=None)
-    st.markdown("Etude en détail du nombre de prises / connectiques différents selon arrondissement",
-                unsafe_allow_html=False)
+    # Types de connectiques par arrondissement
+    st.header("Connectiques par arrondissement", anchor=None)
+    st.markdown("Paris comporte plus de 700 bornes de recharges de voitures électriques recensées dans les vingt arrondissements. \
+    Il existe actuellement 5 types de connectiques disponibles dans la ville. Il est possible de consulter la répartition des connectiques \
+    en fonction de l'arrondissement en sélectionnant le type de prise dans le menu déroulant ci-dessous."
+                , unsafe_allow_html=False)
 
     stacked_data = pd.concat([belib, pd.get_dummies(belib["fields.statut_pdc"])], axis=1).reset_index()
     stacked_data["code postal"] = stacked_data["Adresse station"].apply(lambda x: re.findall("75\d+", x)[0])
@@ -228,31 +206,109 @@ def app():
                                options=["Prise type EF", "Prise type 2", "Prise type 3", "Prise type Combo CCS",
                                         "Prise type Chademo"], default=["Prise type EF"], key=1)  # bouton multiselect
     prises = ["Prise type EF", "Prise type 2", "Prise type 3", "Prise type Combo CCS", "Prise type Chademo"]
+
+    # couleurs des barres stackées
+    stacked_colors = ['darkgreen', 'forestgreen', 'limegreen', 'lime', 'springgreen']
+
     for prise in prises:
         stacked_data[prise] = stacked_data[prise].apply(lambda x: 1 if x == "oui" else 0)
 
     stacked_chart = stacked_data.groupby(by="code postal").agg(sum)[selection] \
-        .plot(kind="bar", stacked=True, figsize=(20, 8), xlabel="");
+        .plot(kind="bar", stacked=True, figsize=(20, 8), xlabel="", color=stacked_colors);
     st.write(stacked_chart.figure)
 
-    # comparatif entre 2 arrondissements (barchart en vis a vis)
+    st.markdown("Avec des superficies respectives de 848 et 791 hectares, les XV et XVI arrondissements de Paris bénéficient du plus grand nombre d'emplacements Bélib'. \
+    Le XVI arrondissement est également celui qui compte le taux de propriétaires de véhicules motorisés le plus élevé. \
+    Avec presque 53 % de familles qui possèdent au moins un véhicule contre 36 % en moyenne sur l’ensemble de Paris, le XVIe est l’arrondissement le plus motorisé, mais aussi l’un des plus fortunés."
+                , unsafe_allow_html=False)
+
+    # comparatif entre 2 arrondissements
     st.subheader("Comparateur d'arrondissement")
+
+    st.markdown("Afin de s'assurer de la disponibilité des emplacements dans la ville, il est possible de faire un comparatif \
+    du statut par arrondissement. Le placement en vis à vis des 2 graphs permet de visualiser les status des emplacements en temps réel.\
+    Le partage de cette information sous cette forme a une fin utile, étant d'aiguiller l'usager vers un arrondissement ou un autre en fonction des disponbilités des emplacements."
+                , unsafe_allow_html=False)
+
+    # test adaptation du graph
     col1, col2 = st.columns(2)
     with col1:
         arrondissement1 = st.selectbox("Arrondissement", sorted(list(pie_data["code postal"].unique())), key=2)
-        bar_plot_1 = \
-        stacked_data[['code postal', 'Prise type EF', 'Prise type 2', 'Prise type Combo CCS', 'Prise type Chademo']] \
+        bar_plot_1 = stacked_data[['code postal', 'Disponible', 'En maintenance', 'Inconnu', 'Occupé (en charge)']] \
             .groupby(by="code postal") \
             .agg(sum) \
-            .loc[arrondissement1].reset_index().rename(columns={"index": "statut"}).set_index("statut").T \
-            .plot(kind="barh", figsize=(10, 6));
+            .loc[arrondissement1].reset_index() \
+            .rename(columns={"index": "statut"}).set_index("statut").T \
+            .plot(kind="barh", figsize=(10, 6), color=status_colors).legend(loc='upper right');
         st.write(bar_plot_1.figure)
     with col2:
         arrondissement2 = st.selectbox("Arrondissement", sorted(list(pie_data["code postal"].unique())), key=3)
-        bar_plot_2 = \
-        stacked_data[['code postal', 'Prise type EF', 'Prise type 2', 'Prise type Combo CCS', 'Prise type Chademo']] \
+        bar_plot_2 = stacked_data[['code postal', 'Disponible', 'En maintenance', 'Inconnu', 'Occupé (en charge)']] \
             .groupby(by="code postal") \
             .agg(sum) \
-            .loc[arrondissement2].reset_index().rename(columns={"index": "statut"}).set_index("statut").T \
-            .plot(kind="barh", figsize=(10, 6));
+            .loc[arrondissement2].reset_index() \
+            .rename(columns={"index": "statut"}).set_index("statut").T \
+            .plot(kind="barh", figsize=(10, 6), color=status_colors).legend(loc='upper right');
         st.write(bar_plot_2.figure)
+
+
+    ### CHLOROPETH
+    st.title("")
+    st.header("Disponibilités des bornes par quartier")
+    st.title("")
+    dfgeoq = gpd.read_file("quartier_paris.geojson")
+    link = "https://parisdata.opendatasoft.com/api/records/1.0/search/?dataset=belib-points-de-recharge-pour-vehicules-electriques-disponibilite-temps-reel&q=&rows=10000&facet=statut_pdc&facet=last_updated&facet=arrondissement"
+    r = requests.get(link)
+    data = r.json()
+    dispo = pd.json_normalize(data["records"])
+    dispobelib = dispo[dispo["fields.statut_pdc"] == "Disponible"]
+    dispobelib = dispobelib.groupby(by="fields.adresse_station").count()[["datasetid"]]
+    dispobelib.reset_index(inplace=True)
+    dispobelib.rename(columns={"datasetid": "bornes_dispo"}, inplace=True)
+    dispobelib["bornes_dispo"] = dispobelib["bornes_dispo"].astype(int)
+    dispo = pd.merge(dispo, dispobelib, on="fields.adresse_station")
+    dispo['point'] = dispo["fields.coordonneesxy"].apply(lambda x: Point(float(x[1]), float(x[0])))
+    dispo.drop_duplicates(subset='fields.adresse_station', keep='first', inplace=True)
+    dispo = gpd.GeoDataFrame(
+        dispo, geometry="point")
+    dispo.set_crs(epsg=4326, inplace=True)
+    dispo.to_crs(epsg=4326, inplace=True)
+    dfgeoqfinal = gpd.sjoin(dfgeoq, dispo, how="left", predicate="intersects")
+    dfgeoqfinal = (
+        dfgeoqfinal.merge(dfgeoqfinal.groupby(by="c_quinsee")["bornes_dispo"].sum().reset_index(), on="c_quinsee",
+                          how="left"))
+    dfgeoqfinal.drop_duplicates(subset='c_quinsee', keep='first', inplace=True)
+    dfgeoqfinal.reset_index(inplace=True)
+    dfgeoqfinal.rename(
+        columns={"l_qu": "quartier", "fields.arrondissement": "arrondissement", "bornes_dispo_y": "bornes_dispo"},
+        inplace=True)
+    dfgeoqfinal.drop(
+        columns=["bornes_dispo_x", "fields.code_insee_commune", "fields.statut_pdc", "fields.url_description_pdc",
+                 "datasetid", "index_right", "index", "fields.code_insee_commune"], inplace=True)
+
+    def adresse(adresse_postale):
+        adresse_postale = adresse_postale.replace(" ", "+")
+        link = f"https://api-adresse.data.gouv.fr/search/?q={adresse_postale}"
+        r = requests.get(link)
+        coords = r.json()["features"][0]["geometry"]["coordinates"]
+        my_tuple = coords[1], coords[0]
+        return (list(my_tuple))
+
+    lieu = adresse("10 rue du Louvre 75001".capitalize())
+    carte_lieu = folium.Map(location=lieu, zoom_start=12)
+    cp = folium.Choropleth(
+        geo_data=dfgeoqfinal,
+        name="geometry",
+        data=dfgeoqfinal,
+        columns=["c_quinsee", "bornes_dispo"],
+        key_on='feature.properties.c_quinsee',
+        fill_color='YlGn',
+        fill_opacity=0.6,
+        line_opacity=0.6,
+        legend_name=("Nombre de bornes recharges dispos par quartier"),
+        highlight=True,
+        bins=5).add_to(carte_lieu)
+    folium.raster_layers.TileLayer(tiles="Stamen Terrain", overlay=True).add_to(carte_lieu)
+    folium.LayerControl('topright', collapsed=True).add_to(carte_lieu)
+    folium.GeoJsonTooltip(['quartier', 'arrondissement', 'bornes_dispo']).add_to(cp.geojson)
+    folium_static(carte_lieu)

@@ -2,7 +2,7 @@ import streamlit as st
 
 # Custom imports
 from multipleapp import MultiPage
-from apps import belib, velib,pollution,home # import your pages here
+from apps import belib, velib,pollution,home,geo_velib_belib # import your pages here
 
 # Create an instance of the app
 app = MultiPage()
@@ -18,10 +18,10 @@ st.title("")
 st.title("")
 st.title("")
 # Add all your applications (pages) here
-app.add_page('Une incroyable équipe',home.app)
+app.add_page("Je book mon sweet motion",geo_velib_belib.app)
+app.add_page("Se brancher pour mieux avancer", belib.app)
+app.add_page("Have a break, Have a Vélib'",velib.app)
 app.add_page("Rouler à vélo c'est respirer",pollution.app)
-app.add_page("Se brancher pour avancer", belib.app)
-app.add_page("Have a break, Have a vélib",velib.app)
-
+app.add_page('Une équipe incroyable',home.app)
 # The main app
 app.run()
