@@ -101,8 +101,9 @@ def app():
         st.subheader("stations proches")
         velib_tot["distances(m)"] = distances
         velib_tot["distances(m)"] = velib_tot["distances(m)"].apply(lambda x: round(x))
-        dispo_proche = velib_tot[["name", "dispo", "distances(m)"]].groupby(by="name").agg(
-            {"dispo": "count", "distances(m)": np.mean}) \
+        dispo_proche = velib_tot[velib_tot["dispo"] != 0]
+        dispo_proche = dispo_proche[["name", "dispo", "distances(m)"]].groupby(by="name").agg(
+            {"dispo": sum, "distances(m)": np.mean}) \
             .sort_values(by="distances(m)", ascending=True) \
             .reset_index() \
             .rename(columns={"name": "station", "dispo": "nombre dispo", "distances(m)": "distance(m)"})
