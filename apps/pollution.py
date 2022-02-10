@@ -17,10 +17,9 @@ import plotly.graph_objects as go
 from PIL import Image
 
 def app():
-    st.title("Ici tu peux voir comment arrêter de polluer l'atmosphère,"
-              " grâce à une invention incroyable qui s'appelle le vélo....")
+    st.title("Plus de Vélib', moins de pollution ?")
     st.subheader("")
-    st.header("Et, si tu vas pouvoir respirer aujourd'hui...")
+    st.header("Ça respire...?")
     st.title("")
     url = 'https://www.airparif.asso.fr/'
     navigator = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1)'
@@ -75,7 +74,6 @@ def app():
     vp19 = pd.read_csv('vp19.csv', sep=',')
     vp20 = pd.read_csv('vp20.csv', sep=',')
     vp21 = pd.read_csv('vp21.csv', sep=',')
-    st.header("+ de Vélib' : - de pollution ?")
 
     st.header("La pollution et l'utilisation des Vélib' à Paris depuis 2019")
     st.subheader('Et ça pédale fort depuis trois ans !')

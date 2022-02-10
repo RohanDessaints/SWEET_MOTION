@@ -8,7 +8,7 @@ def app():
     st.title("")
     st.title("")
     st.title("")
-    st.subheader("Ça c'est nous, une super équipe qui à le projet d'encourager les parisiens à passer aux véhicules à mobilité douce !")
+    st.subheader("Ça c'est nous, une super équipe qui a le projet d'encourager les Parisiens à passer aux véhicules à mobilité douce !")
     st.title("")
     st.title("")
     st.image(Image.open('us.png'))

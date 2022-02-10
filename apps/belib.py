@@ -110,16 +110,7 @@ def app():
         st.header("Réseau Bélib Paris", anchor=None)
         st.subheader("carte des emplacements")
         folium_static(map_paris)  # affichage
-    with col2:
-        st.header("En chiffres ", anchor=None)
-        st.subheader("nombre d'emplacements")
-        pie_data = pd.concat([belib, pd.get_dummies(belib["fields.statut_pdc"])], axis=1).reset_index()
-        pie_data["code postal"] = pie_data["Adresse station"].apply(lambda x: re.findall("75\d+", x)[0])
-        pie_data["total"] = pie_data["Disponible"] + pie_data["En maintenance"] + pie_data["Inconnu"] + pie_data[
-            "Occupé (en charge)"]
-        table = pie_data.groupby(by="code postal") \
-            .agg(sum)[[status]]
-        table
+
     # table et chart statiques tout Paris
     # data
     pie_data = pd.concat([belib, pd.get_dummies(belib["fields.statut_pdc"])], axis=1).reset_index()
@@ -254,8 +245,15 @@ def app():
 
     ### CHLOROPETH
     st.title("")
-    st.header("Disponibilités des bornes par quartier")
+    st.title("Disponibilité des bornes de recharges Bélib’ par quartiers", anchor=None)
     st.title("")
+    # texte choropleth Bélib
+    st.markdown("La capitale possède exactement 20 arrondissements et 80 quartiers, ce qui peut très vite devenir complexe à gérer. \
+    Nous souhaitions fournir un dashboard qui permette de visualiser rapidement et en temps réels quels sont les quartiers qui disposent le plus de bornes libres et lesquels sont les saturés. \
+    Ainsi grâce à ce choropleth, nous aidons les agents de la ville de Paris à mieux gérer leur parc de bornes installées.")
+
+
+
     dfgeoq = gpd.read_file("quartier_paris.geojson")
     link = "https://parisdata.opendatasoft.com/api/records/1.0/search/?dataset=belib-points-de-recharge-pour-vehicules-electriques-disponibilite-temps-reel&q=&rows=10000&facet=statut_pdc&facet=last_updated&facet=arrondissement"
     r = requests.get(link)
